@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "statsuite-lib"
+version = "0.1.0"
+description = ""
+authors = ["Sergio Pena <isergiopena@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+httpx = "^0.28.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
