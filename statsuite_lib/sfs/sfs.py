@@ -74,7 +74,7 @@ class SFSClient:
         """
 
         resp = httpx.get(
-            f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}&id={loading_id}"  # noqa
+            url=f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
         )
         if resp.status_code == 200:
             return LoadingLog.model_validate(resp.json())
@@ -106,7 +106,7 @@ class SFSClient:
             self.log.error(f"Mapping outcome of {loading.executionStatus} to RETRY")
             return self.LoadingStatus.RETRY
 
-    def check_if_reindex_finished(
+    def wait_for_index_to_finish(  # noqa FNE005
         self,
         tenant: str,
         loading_id: str,

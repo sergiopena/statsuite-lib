@@ -1,6 +1,9 @@
 import logging
+from typing import Iterator
 
 import httpx
+
+from .models import Space, Tenants
 
 
 class ConfigClient:
@@ -24,22 +27,21 @@ class ConfigClient:
         Returns:
             loadingId(str)
         """
-        resp = httpx.get(
-            f"{self.CONFIG_URL}/configs/tenants.json"
-        )
+        resp = httpx.get(f"{self.CONFIG_URL}/configs/tenants.json")
         if resp.status_code == 200:
-            from .models import Tenants
-
             loading = Tenants.model_validate(resp.json())
             return loading
 
-    def get_dataspaces(self, tenant: str = 'default'):
+    def get_dataspaces(self, tenant: str = "default") -> Iterator[Space]:
         """Returns a list of dataspaces configured for a tenant
 
         Args:
             tenant: select which tenant
+
+        Yields:
+        Space: A dataspace configuration object for each space in the tenant.
         """
         tenants = self.get_tenants()
         spaces = tenants.root.get(tenant).spaces
-        for s in spaces:
-            yield spaces.get(s)
+        for space in spaces:
+            yield spaces.get(space)

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dss-lib"
+name = "statsuite-lib"
 version = "0.1.3"
 description = ""
 authors = ["Sergio Pena <isergiopena@gmail.com>"]
@@ -28,6 +28,7 @@ flake8-bandit = "^4.1.1"
 flake8-isort = "^6.1.1"
 safety = "^3.2.14"
 flake8-pyproject = "^1.2.3"
+freezegun = "^1.5.3"
 
 [build-system]
 requires = ["poetry-core"]
@@ -39,5 +40,4 @@ per-file-ignores = [
     '__init__.py:F401',
     'tests/*py:S101',
 ]
-
-max-line-length = 88
+max-line-length = 95

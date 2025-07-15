@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, Union
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
@@ -10,24 +10,32 @@ class Index(RootModel):
         root: returns a json in the format { "loadingId": ######### }
     """
 
-    root: Dict[str, Union[str,Dict]]
+    root: Dict[str, Union[str, Dict]]
+
 
 class Space(BaseModel):
-    id: str
+    """Model for spaces inside tenants
+
+    Attributes:
+        id: Space id
+        url: space url
+    """
+
+    id: str  # noqa VNE003
     url: str
+
 
 class Tenant(BaseModel):
     """Minimun model for Loading Log entity
 
     Attributes:
         model_config: Configuration
-        executionStart: Timestamp start of the task
-        executionStatus: Status of the task
         id: Loadingid
+        spaces: Dict of spaces inside tenant
     """
 
     model_config = ConfigDict(extra="allow")
-    id: str
+    id: str  # noqa VNE003
     spaces: Dict[str, Space]
 
 

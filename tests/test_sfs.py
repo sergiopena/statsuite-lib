@@ -116,19 +116,20 @@ def test_index(httpx_mock):
 def test_wait_for_reindex(httpx_mock, loading):
     httpx_mock.add_response(status_code=200, content=loading)
     client = SFSClient(sfs_url="https://foo", sfs_api_key="bar")
-    finished = client.check_if_reindex_finished(
+    finished = client.wait_for_index_to_finish(
         tenant="default", loading_id="172355625862"
     )
     assert finished is True
 
 
-def test_wait_for_reindex_expire(httpx_mock, loading_inprogress, mocker):
-    mocker.patch(
-        "statsuite_lib.SFSClient.check_status_loading",
+def test_wait_for_reindex_expire(loading_inprogress, mocker):
+    mocker.patch.object(
+        SFSClient,
+        "check_status_loading",
         return_value=SFSClient.LoadingStatus.RETRY,
     )
     client = SFSClient(sfs_url="https://foo", sfs_api_key="bar")
-    finished = client.check_if_reindex_finished(
+    finished = client.wait_for_index_to_finish(
         tenant="default", loading_id="172355625862", backoff=0.1, timeout=0.2
     )
     assert finished is False
