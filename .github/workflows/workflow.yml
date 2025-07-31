@@ -58,7 +58,7 @@ jobs:
           api-key: ${{ secrets.SAFETY_API_KEY }}
           args: --detailed-output
 
-  dependency:
+  bandit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run Safety
-        run: make dependency-check
+        run: make security-check
 
   test:
     runs-on: ubuntu-latest

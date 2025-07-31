@@ -13,7 +13,7 @@ security-check:
 
 # Run dependency security scan
 dependency-check:
-	poetry run safety scan --key eda22bc0-4998-4f81-a0ac-b2ad943d172e
+	poetry run safety scan
 
 # Format code with black
 black:
