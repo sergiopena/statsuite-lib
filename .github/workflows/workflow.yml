@@ -89,7 +89,7 @@ jobs:
         run: make test
 
   deploy:
-    needs: [black, flake, safety, dependency, test]
+    needs: [black, flake, safety, bandit, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
