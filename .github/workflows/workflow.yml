@@ -53,7 +53,10 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run Safety
-        run: make security-check
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+          args: --detailed-output
 
   dependency:
     runs-on: ubuntu-latest
