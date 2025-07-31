@@ -1,19 +1,20 @@
-.PHONY: all test security-check dependency-check format lint
+.PHONY: all test bandit safety black flake
 
 # Run all checks
-all: test security-check dependency-check format lint
+all: black flake test bandit safety
 
 # Run tests with coverage
 test:
 	poetry run pytest --cov-report term-missing --cov=statsuite_lib --cov-fail-under=95 tests/*
 
 # Run security check with bandit
-security-check:
+bandit:
 	poetry run bandit -r statsuite_lib
 
+
 # Run dependency security scan
-dependency-check:
-	poetry run safety scan --key eda22bc0-4998-4f81-a0ac-b2ad943d172e
+safety:
+	poetry run safety scan
 
 # Format code with black
 black:
@@ -28,7 +29,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all              - Run all checks (test, security, dependencies, format, lint)"
 	@echo "  test             - Run tests with coverage"
-	@echo "  security         - Run security check with bandit"
-	@echo "  dependency       - Check dependencies for known security issues"
+	@echo "  bandit           - Run security check with bandit"
+	@echo "  safety           - Check dependencies for known security issues"
 	@echo "  black            - Format code with black"
 	@echo "  flake            - Run linting checks"

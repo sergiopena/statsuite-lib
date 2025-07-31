@@ -1,10 +1,12 @@
 
-name: Tests and Deploy
+name: statsuite-lib
 
 on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -23,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run black
-        run: make format
+        run: make black
 
   flake:
     runs-on: ubuntu-latest
@@ -36,9 +38,9 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
+        run: poetry sync
       - name: Run flake
-        run: make lint
+        run: make flake
 
   safety:
     runs-on: ubuntu-latest
@@ -53,9 +55,12 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run Safety
-        run: make security-check
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+          args: --detailed-output
 
-  dependency:
+  bandit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,11 +71,11 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
-      - name: Run Safety
-        run: make dependency-check
+        run: poetry sync
+      - name: Run Bandit
+        run: make bandit
 
-  test:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,13 +86,15 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
-      - name: Run Safety
+        run: poetry sync
+      - name: Run Tests
         run: make test
 
-  deploy:
-    needs: [black, flake, safety, dependency, test]
+  build_doc:
+    name: Build Documentation
+    needs: [black, flake, safety, bandit, tests]
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -97,6 +104,67 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
-#      - name: Deploy
-#        run: poetry run deploy
+        run: poetry sync --all-groups
+      - name: Generate doc
+        run: |
+          cd docs
+          make html
+      - name: upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+
+  deploy_doc:
+    needs: [build_doc]
+    name: Deploy Documentation
+    if: startsWith(github.ref, 'refs/tags/')  # only publish doc in tags
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: deploy pages
+        uses: actions/deploy-pages@v4
+
+  build:
+    needs: [black, flake, safety, bandit, tests]
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+      - name: Build
+        run: poetry build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    needs: [build]
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/statsuite-lib
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
