@@ -88,18 +88,17 @@ jobs:
       - name: Run Safety
         run: make test
 
-  deploy:
+  documentation:
     needs: [black, flake, safety, bandit, test]
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - id: deployment
+        uses: sphinx-notes/pages@v3
         with:
-          python-version: '3.13'
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Install dependencies
-        run: poetry install
-#      - name: Deploy
-#        run: poetry run deploy
+          publish: true
