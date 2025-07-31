@@ -38,7 +38,7 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 github_username = 'sergiopena'
-github_repository = 'statsuite_lib'
+github_repository = 'statsuite-lib'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
