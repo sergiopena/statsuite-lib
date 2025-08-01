@@ -89,7 +89,7 @@ jobs:
         run: make test
 
   documentation:
-#    needs: [black, flake, safety, bandit, tests]
+    needs: [black, flake, safety, bandit, tests]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -117,3 +117,31 @@ jobs:
           path: docs/build/html
       - name: deploy pages
         uses: actions/deploy-pages@v4
+
+  build:
+    needs: [black, flake, safety, bandit, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+      - name: Build
+        run: poetry build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/statsuite-lib
+    permissions:
+      id-token: write
