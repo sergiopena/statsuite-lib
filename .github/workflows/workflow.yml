@@ -105,10 +105,8 @@ jobs:
           python-version: '3.13'
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Install dependencies
-        run: poetry sync --all-groups
       - id: generate-requirements
-        run: poetry export --without-hashes --format=requirements.txt > requirements.txt
+        run: poetry export --without-hashes --all-groups --format=requirements.txt > requirements.txt
       - id: deployment
         uses: sphinx-notes/pages@v3
         with:
