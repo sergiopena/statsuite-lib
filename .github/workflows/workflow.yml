@@ -36,7 +36,7 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
+        run: poetry sync
       - name: Run flake
         run: make flake
 
@@ -69,7 +69,7 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
+        run: poetry sync
       - name: Run Bandit
         run: make bandit
 
@@ -84,7 +84,7 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry install
+        run: poetry sync
       - name: Run Tests
         run: make test
 
@@ -105,8 +105,8 @@ jobs:
           python-version: '3.13'
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Poetry install
-        run: poetry install
+      - name: Install dependencies
+        run: poetry sync
       - id: generate-requirements
         run: poetry export --without-hashes --format=requirements.txt > requirements.txt
       - id: deployment
