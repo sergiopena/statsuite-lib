@@ -107,13 +107,13 @@ jobs:
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
         run: poetry sync --all-groups
-      - id: generate-requirements
+      - name: Generate doc
         run: |
-          poetry export --without-hashes --all-groups --format=requirements.txt > requirements.txt
-          cat requirements.txt
-      - id: deployment
-        uses: sphinx-notes/pages@v3
+          cd docs
+          make html
+      - name: upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          publish: true
-          documentation_path: ./docs/source
-          requirements_path: requirements.txt
+          path: docs/build/html
+      - name: deploy pages
+        uses: actions/deploy-pages@v4
