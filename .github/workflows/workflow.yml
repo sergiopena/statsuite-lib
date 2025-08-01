@@ -1,5 +1,5 @@
 
-name: Tests and Deploy
+name: statsuite-lib
 
 on:
   push:
