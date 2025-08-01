@@ -105,6 +105,8 @@ jobs:
           python-version: '3.13'
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
+      - name: Poetry install
+        run: poetry install
       - id: generate-requirements
         run: poetry export --without-hashes --format=requirements.txt > requirements.txt
       - id: deployment
