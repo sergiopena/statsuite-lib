@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -115,6 +117,7 @@ jobs:
   deploy_doc:
     needs: [build_doc]
     name: Deploy Documentation
+    if: startsWith(github.ref, 'refs/tags/')  # only publish doc in tags
     runs-on: ubuntu-latest
     environment:
       name: github-pages
