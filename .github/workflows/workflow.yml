@@ -106,7 +106,7 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
-        run: poetry sync
+        run: poetry sync --all-groups
       - id: generate-requirements
         run: poetry export --without-hashes --format=requirements.txt > requirements.txt
       - id: deployment
