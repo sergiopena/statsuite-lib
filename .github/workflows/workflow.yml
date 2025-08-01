@@ -88,15 +88,11 @@ jobs:
       - name: Run Tests
         run: make test
 
-  documentation:
+  build_doc:
+    name: Build Documentation
     needs: [black, flake, safety, bandit, tests]
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -115,11 +111,24 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/build/html
+
+  deploy_doc:
+    needs: [build_doc]
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
       - name: deploy pages
         uses: actions/deploy-pages@v4
 
   build:
     needs: [black, flake, safety, bandit, tests]
+    name: Build Package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
