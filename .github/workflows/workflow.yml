@@ -89,7 +89,7 @@ jobs:
         run: make test
 
   documentation:
-    needs: [black, flake, safety, bandit, tests]
+#    needs: [black, flake, safety, bandit, tests]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -108,7 +108,9 @@ jobs:
       - name: Install dependencies
         run: poetry sync --all-groups
       - id: generate-requirements
-        run: poetry export --without-hashes --all-groups --format=requirements.txt > requirements.txt
+        run: |
+          poetry export --without-hashes --all-groups --format=requirements.txt > requirements.txt
+          cat requirements.txt
       - id: deployment
         uses: sphinx-notes/pages@v3
         with:
