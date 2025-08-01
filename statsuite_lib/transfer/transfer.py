@@ -215,4 +215,4 @@ class TransferClient:
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
-        return resp .json()
+        return resp.json()

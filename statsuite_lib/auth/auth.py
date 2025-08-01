@@ -2,7 +2,7 @@ import logging
 
 import httpx
 
-from statsuite_lib import KeycloakClient
+from ..keycloak.keycloak import KeycloakClient
 
 
 class AuthClient:

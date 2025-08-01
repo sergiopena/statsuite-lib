@@ -36,12 +36,14 @@ pdoc = "^15.0.4"
 sphinx-rtd-theme = "^3.0.2"
 myst-parser = "^4.0.1"
 sphinx-toolbox = "^4.0.0"
+pip = "^25.2"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.flake8]
+exclude = ['.poetry']
 ignore = ['E231', 'E241']
 per-file-ignores = [
     '__init__.py:F401',

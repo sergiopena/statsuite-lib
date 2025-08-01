@@ -1504,6 +1504,18 @@ MarkupSafe = ">=1.1.1"
 pygments = ">=2.12.0"
 
 [[package]]
+name = "pip"
+version = "25.2"
+description = "The PyPA recommended tool for installing Python packages."
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "pip-25.2-py3-none-any.whl", hash = "sha256:6d67a2b4e7f14d8b31b8b52648866fa717f45a1eb70e83002f4331d07e953717"},
+    {file = "pip-25.2.tar.gz", hash = "sha256:578283f006390f85bb6282dffb876454593d637f5d1be494b5202ce4877e71f2"},
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.3.8"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
@@ -2741,4 +2753,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11,<4.0"
-content-hash = "ce2e0dba199479c1a3e7264fca5e40ffc5ae494d93779fe6a390d2120b7041ce"
+content-hash = "f0ef57ad320e45cc7dee36e237268e9706c79b5ae1482427cbc4b774e2ffd001"
