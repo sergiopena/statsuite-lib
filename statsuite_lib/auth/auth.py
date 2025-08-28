@@ -49,11 +49,12 @@ class AuthClient:
         self._keycloak_client = keycloak_client
         self._log = logging.getLogger("AuthClient")
 
+
     def add_rule(
         self,
         user_mask: str,
         is_group: bool,
-        permission=int,
+        permission: int,
         dataspace: str = "*",
         artifact_type: int = 0,
         artefact_agency_id: str = "*",
@@ -85,12 +86,14 @@ class AuthClient:
             "artefactAgencyId": artefact_agency_id,
             "artefactId": artefact_id,
             "artefactVersion": artefact_version,
-            "permission": permission,
+            "permission": permission
         }
 
         url = f"{self.AUTH_URL}/AuthorizationRules"
+        headers = self._keycloak_client.auth_header()
+        headers["Content-Type"] = "application/json"
         response = httpx.post(
-            url=url, headers=self._keycloak_client.auth_header(), data=data
+            url=url, headers=headers, json=data
         )
         response.raise_for_status()
         return response.json()
