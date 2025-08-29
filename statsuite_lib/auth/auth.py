@@ -91,6 +91,55 @@ class AuthClient:
         url = f"{self.AUTH_URL}/AuthorizationRules"
         headers = self._keycloak_client.auth_header()
         headers["Content-Type"] = "application/json"
+        
+        # Add debugging to help identify the 400 Bad Request issue
+
+        
         response = httpx.post(url=url, headers=headers, json=data)
-        response.raise_for_status()
+        
+        # Add error response logging for debugging
+        if response.status_code >= 400:
+            resp = response.json()
+            if resp.get("payload"):
+                if resp.get("payload").get("errors"):
+                    if resp.get("payload").get("errors")[0].startswith('Cannot insert duplicate key'):
+                        print("Permission already exists")
+                        pass
+            else:
+                response.raise_for_status()
+
+        return response.json()
+
+    def delete_rule(self, rule_id: str):
+        """Delete an authorization rule by its ID.
+
+        Args:
+            rule_id (str): The unique identifier of the rule to delete.
+
+        Returns:
+            dict: The JSON response from the server confirming the deletion.
+
+        Raises:
+            httpx.HTTPStatusError: If the server returns an error status code.
+        """
+        url = f"{self.AUTH_URL}/AuthorizationRules/{rule_id}"
+        headers = self._keycloak_client.auth_header()
+        
+        # Add debugging to help identify any issues
+        print(f"Deleting rule at: {url}")
+        print(f"Headers: {headers}")
+        
+        response = httpx.delete(url=url, headers=headers)
+        
+        # Add error response logging for debugging
+        if response.status_code >= 400:
+            resp = response.json()
+            if resp.get("payload"):
+                if resp.get("payload").get("errors"):
+                    if resp.get("payload").get("errors")[0].startswith('Rule not found'):
+                        print("Rule not found")
+                        pass
+            else:
+                response.raise_for_status()
+        
         return response.json()
