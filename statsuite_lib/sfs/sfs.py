@@ -72,21 +72,15 @@ class SFSClient:
         Returns:
             LoadingLog or None if the loading_id cannot be found
         """
+        print("getting logs for loading_id: ", loading_id)
 
         resp = httpx.get(
-            url=f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
-        )
-        if resp.status_code == 200:
-            return LoadingLog.model_validate(resp.json())
-        if resp.status_code == 502:
-            self.log.error("Error 502 getting loading log, using expensive query")
-            resp = httpx.get(
-                f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
-            )  # noqa
-            loadings = LoadingLogs.model_validate(resp.json())
-            for loading in loadings.root:
-                if str(loading.id) == loading_id:
-                    return loading
+            f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
+        )  # noqa
+        loadings = LoadingLogs.model_validate(resp.json())
+        for loading in loadings.root:
+            if str(loading.id) == loading_id:
+                return loading
         self.log.error(f"Error gathering logs {resp.text}")
 
     def check_status_loading(self, tenant: str, loading_id: str) -> LoadingStatus:
@@ -100,6 +94,7 @@ class SFSClient:
             LoadingStatus enumeration
         """
         loading = self.get_log(tenant=tenant, loading_id=loading_id)
+        print(f"Loading: {loading}")
         if loading.executionStatus == "completed":
             return self.LoadingStatus.COMPLETED
         else:
