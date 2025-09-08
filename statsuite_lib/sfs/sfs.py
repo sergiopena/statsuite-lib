@@ -60,14 +60,14 @@ class SFSClient:
         FAILED = 3
         BUG502 = 10
 
-    def get_log(self, tenant: str, loading_id: str) -> Optional[LoadingLog]:
+    def get_log(self, tenant: str, loading_id: int) -> Optional[LoadingLog]:
         """Get log and status from by loading_id, if retrieving a log by id
         fails with a 502 it will fallback to retrieve all available logs and
         filter them
 
         Arguments:
             tenant: (str) .stat tenant
-            loading_id: (str) id of the loading
+            loading_id: (int) id of the loading
 
         Returns:
             LoadingLog or None if the loading_id cannot be found
@@ -79,9 +79,9 @@ class SFSClient:
         )  # noqa
         loadings = LoadingLogs.model_validate(resp.json())
         for loading in loadings.root:
-            if str(loading.id) == loading_id:
+            if loading.id == loading_id:
                 return loading
-        self.log.error(f"Error gathering logs {resp.text}")
+        self.log.error(f"Cannot find logs for loading_id: {loading_id}")
 
     def check_status_loading(self, tenant: str, loading_id: str) -> LoadingStatus:
         """Check the status of a loading taks
@@ -104,7 +104,7 @@ class SFSClient:
     def wait_for_index_to_finish(  # noqa FNE005
         self,
         tenant: str,
-        loading_id: str,
+        loading_id: int,
         startup_sleep: int = 0,
         timeout: int = 600,
         backoff: int = 30,
@@ -114,7 +114,7 @@ class SFSClient:
 
         Arguments:
             tenant: (str) .stat tenant
-            loading_id: (str) id of the loading
+            loading_id: (int) id of the loading
             startup_sleep: (int) grace period (secs) before start fetching the
                            loading state
             timeout: (int) max time (secs) the loop will be running
