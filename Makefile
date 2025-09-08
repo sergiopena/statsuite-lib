@@ -11,11 +11,6 @@ test:
 bandit:
 	poetry run bandit -r statsuite_lib
 
-
-# Run dependency security scan
-safety:
-	poetry run safety scan
-
 # Format code with black
 black:
 	poetry run black --check .
