@@ -91,24 +91,51 @@ class AuthClient:
         url = f"{self.AUTH_URL}/AuthorizationRules"
         headers = self._keycloak_client.auth_header()
         headers["Content-Type"] = "application/json"
-        
+
         # Add debugging to help identify the 400 Bad Request issue
 
-        
         response = httpx.post(url=url, headers=headers, json=data)
-        
-        # Add error response logging for debugging
-        if response.status_code >= 400:
-            resp = response.json()
-            if resp.get("payload"):
-                if resp.get("payload").get("errors"):
-                    if resp.get("payload").get("errors")[0].startswith('Cannot insert duplicate key'):
-                        print("Permission already exists")
-                        pass
-            else:
-                response.raise_for_status()
+
+        # Handle error responses
+        self._handle_error_response(response)
 
         return response.json()
+
+    def _handle_error_response(self, response: httpx.Response) -> None:
+        """Handle error responses from the auth API.
+
+        Args:
+            response: The HTTP response to check for errors.
+        """
+        if response.status_code < 400:
+            return
+
+        resp = response.json()
+        payload = resp.get("payload", {})
+        errors = payload.get("errors", [])
+
+        if errors and errors[0].startswith("Cannot insert duplicate key"):
+            print("Permission already exists")
+        else:
+            response.raise_for_status()
+
+    def _handle_delete_error_response(self, response: httpx.Response) -> None:
+        """Handle error responses from delete operations.
+
+        Args:
+            response: The HTTP response to check for errors.
+        """
+        if response.status_code < 400:
+            return
+
+        resp = response.json()
+        payload = resp.get("payload", {})
+        errors = payload.get("errors", [])
+
+        if errors and errors[0].startswith("Rule not found"):
+            print("Rule not found")
+        else:
+            response.raise_for_status()
 
     def delete_rule(self, rule_id: str):
         """Delete an authorization rule by its ID.
@@ -119,27 +146,18 @@ class AuthClient:
         Returns:
             dict: The JSON response from the server confirming the deletion.
 
-        Raises:
-            httpx.HTTPStatusError: If the server returns an error status code.
+
         """
         url = f"{self.AUTH_URL}/AuthorizationRules/{rule_id}"
         headers = self._keycloak_client.auth_header()
-        
+
         # Add debugging to help identify any issues
         print(f"Deleting rule at: {url}")
         print(f"Headers: {headers}")
-        
+
         response = httpx.delete(url=url, headers=headers)
-        
-        # Add error response logging for debugging
-        if response.status_code >= 400:
-            resp = response.json()
-            if resp.get("payload"):
-                if resp.get("payload").get("errors"):
-                    if resp.get("payload").get("errors")[0].startswith('Rule not found'):
-                        print("Rule not found")
-                        pass
-            else:
-                response.raise_for_status()
-        
+
+        # Handle error responses
+        self._handle_delete_error_response(response)
+
         return response.json()
