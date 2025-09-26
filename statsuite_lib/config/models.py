@@ -17,11 +17,11 @@ class Space(BaseModel):
     """Model for spaces inside tenants
 
     Attributes:
-        id: Space id
+        label: Space id
         url: space url
     """
 
-    id: str  # noqa VNE003
+    label: str  # noqa VNE003
     url: str
 
 
@@ -30,12 +30,11 @@ class Tenant(BaseModel):
 
     Attributes:
         model_config: Configuration
-        id: Loadingid
         spaces: Dict of spaces inside tenant
     """
 
     model_config = ConfigDict(extra="allow")
-    id: str  # noqa VNE003
+    # id: str  # noqa VNE003
     spaces: Dict[str, Space]
 
 

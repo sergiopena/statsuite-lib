@@ -24,7 +24,7 @@ def test_import_sdmx_file_success(transfer_client, httpx_mock):
     httpx_mock.add_response(
         method="POST",
         url="https://transfer.example.com/3/import/sdmxFile",
-        json={"message": "Request ID: 12345"},
+        json={"message": "File import completed for 12345"},
         status_code=200,
     )
 

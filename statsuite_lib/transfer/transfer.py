@@ -78,7 +78,11 @@ class TransferClient:
             files=files,
             timeout=timeout,
         )
-        return resp.json().get("message").split(" ")[2]
+        print(resp.json())
+        if resp.status_code != 200:
+            self._log.error(f"Error importing SDMX file: {resp.json()}")
+            return None
+        return resp.json().get("message").split(" ")[4]
 
     def check_request_status(self, dataspace: str, id: int) -> str:  # noqa VNE003
         """
@@ -215,4 +219,16 @@ class TransferClient:
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
+        return resp.json()
+
+    def health(self) -> dict:
+        """
+        Check the health of the transfer service.
+
+        Returns:
+            dict: Health information of the transfer service
+        """
+        health_url = self.TRANSFER_URL.replace("/3", "/health")
+        resp = httpx.get(url=f"{health_url}")
+        resp.raise_for_status()
         return resp.json()

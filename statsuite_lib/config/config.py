@@ -46,15 +46,15 @@ class ConfigClient:
         for space in spaces:
             yield spaces.get(space)
 
-    def get_dataspace(self, dataspace: str, tenant: str='default') -> Space:
+    def get_dataspace(self, dataspace: str, tenant: str = "default") -> Space:
         """Returns a dataspace configuration object for a given tenant and space
 
         Args:
+            dataspace: select which dataspace
             tenant: select which tenant
-            space: select which space
 
         Returns:
             Space: A dataspace configuration object for the given tenant and space.
         """
-        tenants = self.get_tenants()    
+        tenants = self.get_tenants()
         return tenants.root.get(tenant).spaces.get(dataspace)
