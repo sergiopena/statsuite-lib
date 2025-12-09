@@ -221,6 +221,26 @@ class TransferClient:
         )
         return resp.json()
 
+    def activate_dataflow(self, dataspace: str, df_id: str):
+        """
+        Initialise or repair DB objects of a dataflow in a dataspace.
+
+        Args:
+            dataspace (str): The dataspace name
+            df_id (str): The ID of the dataflow
+
+        Returns:
+            dict: Response containing the result of the activate operation
+        """
+        self._log.info(f"Activating dataflow {df_id} in ds {dataspace}")
+        data = {"dataspace": dataspace, "dataflow": df_id}
+        resp = httpx.post(
+            url=f"{self.TRANSFER_URL}/init/dataflow",
+            headers=self._keycloak_client.auth_header(),
+            data=data,
+        )
+        return resp.json()
+
     def health(self) -> dict:
         """
         Check the health of the transfer service.
