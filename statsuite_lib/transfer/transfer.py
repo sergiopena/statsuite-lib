@@ -68,14 +68,13 @@ class TransferClient:
             "targetVersion": target_version,
             "restorationOptionRequired": restoration_option_required,
             "validationType": validation_type,
+            "file": file_object
         }
-        files = {"file": file_object}
         url = f"{self.TRANSFER_URL}/import/sdmxFile"
         resp = httpx.post(
             url=url,
             headers=self._keycloak_client.auth_header(),
             data=data,
-            files=files,
             timeout=timeout,
         )
         print(resp.json())
