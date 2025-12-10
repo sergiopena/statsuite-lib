@@ -68,7 +68,7 @@ class TransferClient:
             "targetVersion": target_version,
             "restorationOptionRequired": restoration_option_required,
             "validationType": validation_type,
-            "file": file_object
+            "file": file_object,
         }
         url = f"{self.TRANSFER_URL}/import/sdmxFile"
         resp = httpx.post(
