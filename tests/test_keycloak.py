@@ -4,7 +4,7 @@ import httpx
 import pytest
 from freezegun import freeze_time
 
-from statsuite_lib import KeycloakClient
+from statsuite_lib import ConfigClient, KeycloakClient
 
 
 @pytest.fixture
@@ -170,3 +170,33 @@ def test_auth_header(keycloak_client):
     assert keycloak_client.auth_header() == {
         "Authorization": "Bearer fake-access-token"
     }
+
+
+def test_from_config_derives_openid_url(
+    mocker, httpx_mock, openid_config_response, token_response
+):
+    config_client = mocker.Mock(spec=ConfigClient)
+    config_client.get_oidc_authority.return_value = "https://keycloak.example.com"
+
+    httpx_mock.add_response(
+        method="GET",
+        url="https://keycloak.example.com/.well-known/openid-configuration",
+        json=openid_config_response,
+    )
+    httpx_mock.add_response(
+        method="POST", url="https://auth.example.com/token", json=token_response
+    )
+
+    client = KeycloakClient.from_config(
+        config_client=config_client,
+        username="test-user",
+        password="test-password",  # noqa S106
+        tenant="default",
+    )
+
+    config_client.get_oidc_authority.assert_called_once_with(tenant="default")
+    expected_openid_url = (
+        "https://keycloak.example.com/.well-known/openid-configuration"
+    )
+    assert client.OPENID_URL == expected_openid_url
+    assert client.access_token == "fake-access-token"  # noqa S105

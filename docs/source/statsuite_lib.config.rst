@@ -20,3 +20,13 @@ Models
    :members:
    :show-inheritance:
    :undoc-members:
+
+.. autoclass:: statsuite_lib.config.models.Scope
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+.. autoclass:: statsuite_lib.config.models.Oidc
+   :members:
+   :show-inheritance:
+   :undoc-members:
