@@ -88,6 +88,20 @@ def test_get_with_timeout(nsi_client, httpx_mock):
     assert response.status_code == 200
 
 
+def test_get_does_not_mutate_caller_supplied_headers(nsi_client, httpx_mock):
+    """Regression test: `headers |= auth_header()` mutates the caller's own dict
+    in place (dict `|=` updates and rebinds to the same object), silently adding
+    the Authorization header to a dict the caller still holds a reference to."""
+    httpx_mock.add_response(
+        method="GET", url="https://nsi.example.com/test/path", status_code=200
+    )
+    custom_headers = {"Custom-Header": "value"}
+
+    nsi_client.get(path="/test/path", headers=custom_headers)
+
+    assert custom_headers == {"Custom-Header": "value"}
+
+
 def test_delete_success(nsi_client, httpx_mock):
     # Mock successful DELETE request
     httpx_mock.add_response(

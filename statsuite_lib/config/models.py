@@ -1,16 +1,8 @@
-from typing import Dict, Union
+"""Pydantic models for the dotStatSuite Config API responses."""
+
+from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, RootModel
-
-
-class Index(RootModel):
-    """Model for return json from indexing request on SFS
-
-    Attributes:
-        root: returns a json in the format { "loadingId": ######### }
-    """
-
-    root: Dict[str, Union[str, Dict]]
 
 
 class Space(BaseModel):
@@ -18,7 +10,7 @@ class Space(BaseModel):
 
     Attributes:
         label: Space id
-        url: space url
+        url: Space url
     """
 
     label: str  # noqa VNE003
@@ -26,23 +18,22 @@ class Space(BaseModel):
 
 
 class Tenant(BaseModel):
-    """Minimun model for Loading Log entity
+    """Model for a single tenant entry in the tenants config
 
     Attributes:
         model_config: Configuration
-        spaces: Dict of spaces inside tenant
+        spaces: Dict of spaces inside the tenant, keyed by space name
     """
 
     model_config = ConfigDict(extra="allow")
-    # id: str  # noqa VNE003
     spaces: Dict[str, Space]
 
 
 class Tenants(RootModel):
-    """Collection of loading log entries
+    """Collection of tenants, keyed by tenant name
 
     Attributes:
-        root: Collection of Loadings without key
+        root: Dict of tenants, keyed by tenant name
     """
 
     root: Dict[str, Tenant]

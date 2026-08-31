@@ -36,7 +36,7 @@ sfs = SFSClient(sfs_url=SFS_URL, sfs_api_key=SFS_API_KEY)
 id = sfs.index()
 
 print(f"Index started with id {id}")
-sfs.wait_for_reindex_to_finish(loading_id=id, tenant='default')
+sfs.wait_for_index_to_finish(loading_id=id, tenant='default')
 ```
 
 ## Contributing

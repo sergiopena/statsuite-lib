@@ -1,9 +1,11 @@
+"""Client for the dotStatSuite Transfer API (SDMX file import and dataflow transfer)."""
+
 import logging
 import time
 
 import httpx
 
-from statsuite_lib import KeycloakClient
+from ..keycloak.keycloak import KeycloakClient
 
 
 class TransferClient:
@@ -30,7 +32,7 @@ class TransferClient:
         self._client = httpx.Client()
         self.TRANSFER_URL = f"{transfer_url}/{api_version}"
         self._keycloak_client = keycloak_client
-        self._log = logging.getLogger("TransferClient")
+        self.log = logging.getLogger("TransferClient")
 
     def import_sdmx_file(
         self,
@@ -53,15 +55,15 @@ class TransferClient:
             timeout (int, optional): Request timeout in seconds. Defaults to None
 
         Returns:
-            int: The ID of the import request
-
-        Raises:
-            httpx.HTTPError: If the request fails
+            int: The ID of the import request, or None if the server returned
+                a non-200 response (the error is logged, not raised).
 
         Example:
-                for csv_file in sample_data_dir.rglob("*.csv"):
-                    with open(csv_file, 'rb') as file:
-                        id = transfer.import_sdmx_file(file=file, dataspace='design')
+            .. code-block:: python
+
+                for csv_file in sample_data_dir.rglob("\\*.csv"):
+                    with open(csv_file, "rb") as file:
+                        id = transfer.import_sdmx_file(file=file, dataspace="design")
         """
         data = {
             "dataspace": dataspace,
@@ -71,15 +73,14 @@ class TransferClient:
             "file": file_object,
         }
         url = f"{self.TRANSFER_URL}/import/sdmxFile"
-        resp = httpx.post(
+        resp = self._client.post(
             url=url,
             headers=self._keycloak_client.auth_header(),
             data=data,
             timeout=timeout,
         )
-        print(resp.json())
         if resp.status_code != 200:
-            self._log.error(f"Error importing SDMX file: {resp.json()}")
+            self.log.error(f"Error importing SDMX file: {resp.json()}")
             return None
         return resp.json().get("message").split(" ")[4]
 
@@ -95,22 +96,22 @@ class TransferClient:
             str: The execution status of the request
 
         """
-        self._log.info(f"Checking request status for dataspace {dataspace} and id {id}")
+        self.log.info(f"Checking request status for dataspace {dataspace} and id {id}")
         data = {"dataspace": dataspace, "id": id}
-        resp = httpx.post(
+        resp = self._client.post(
             url=f"{self.TRANSFER_URL}/status/request",
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
         return resp.json().get("executionStatus")
 
-    def wait_for_request(
+    def wait_for_request(  # noqa FNE005
         self,
         dataspace: str,
         id: int,  # noqa VNE003
         timeout: int = 300,
         backoff: int = 30,  # noqa VNE003
-    ) -> None:
+    ) -> bool:
         """
         Wait for a request to complete with timeout and backoff mechanism.
 
@@ -122,8 +123,6 @@ class TransferClient:
 
         Returns:
             bool: True if timeout occurred, False if request completed successfully
-
-
         """
         start = time.time()
         while True:
@@ -132,7 +131,7 @@ class TransferClient:
                 return False
 
             if time.time() - start > timeout:
-                self._log.error(
+                self.log.error(
                     f"Timeout waiting for request to be completed {timeout} seconds passed"
                 )
                 return True
@@ -140,7 +139,7 @@ class TransferClient:
 
     def transfer_dataflow(
         self, source_dataspace: str, destination_dataspace: str, dataflow: str
-    ):
+    ) -> str:
         """
         Transfer a dataflow from source dataspace to destination dataspace.
 
@@ -151,10 +150,8 @@ class TransferClient:
 
         Returns:
             str: The ID of the transfer request
-
-
         """
-        self._log.info(
+        self.log.info(
             f"Transferring dataflow {dataflow} from {source_dataspace} to {destination_dataspace}"  # noqa E501
         )
         data = {
@@ -169,14 +166,14 @@ class TransferClient:
             "validationType": 0,
         }
 
-        resp = httpx.post(
+        resp = self._client.post(
             url=f"{self.TRANSFER_URL}/transfer/dataflow",
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
         return resp.json().get("message").split(" ")[2]
 
-    def get_tune(self, dataspace: str, dsd_id: str):
+    def get_tune(self, dataspace: str, dsd_id: str) -> dict:
         """
         Retrieve tune information for a specific DSD in a dataspace.
 
@@ -188,16 +185,16 @@ class TransferClient:
             dict: Tune information for the specified DSD
 
         """
-        self._log.info(f"Getting DSD {dsd_id} tune information in ds {dataspace}")
+        self.log.info(f"Getting DSD {dsd_id} tune information in ds {dataspace}")
         data = {"dataspace": dataspace, "dsd": dsd_id}
-        resp = httpx.post(
+        resp = self._client.post(
             url=f"{self.TRANSFER_URL}/tune/info",
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
         return resp.json()
 
-    def set_tune(self, dataspace: str, dsd_id: str, index_type: int):
+    def set_tune(self, dataspace: str, dsd_id: str, index_type: int) -> dict:
         """
         Set tune parameters for a specific DSD in a dataspace.
 
@@ -208,19 +205,17 @@ class TransferClient:
 
         Returns:
             dict: Response containing the result of the tune operation
-
-
         """
-        self._log.info(f"Getting DSD {dsd_id} tune information in ds {dataspace}")
+        self.log.info(f"Getting DSD {dsd_id} tune information in ds {dataspace}")
         data = {"dataspace": dataspace, "dsd": dsd_id, "indexType": index_type}
-        resp = httpx.post(
+        resp = self._client.post(
             url=f"{self.TRANSFER_URL}/tune/dsd",
             headers=self._keycloak_client.auth_header(),
             data=data,
         )
         return resp.json()
 
-    def activate_dataflow(self, dataspace: str, df_id: str):
+    def activate_dataflow(self, dataspace: str, df_id: str) -> dict:
         """
         Initialise or repair DB objects of a dataflow in a dataspace.
 
@@ -231,9 +226,9 @@ class TransferClient:
         Returns:
             dict: Response containing the result of the activate operation
         """
-        self._log.info(f"Activating dataflow {df_id} in ds {dataspace}")
+        self.log.info(f"Activating dataflow {df_id} in ds {dataspace}")
         data = {"dataspace": dataspace, "dataflow": df_id}
-        resp = httpx.post(
+        resp = self._client.post(
             url=f"{self.TRANSFER_URL}/init/dataflow",
             headers=self._keycloak_client.auth_header(),
             data=data,
@@ -248,6 +243,6 @@ class TransferClient:
             dict: Health information of the transfer service
         """
         health_url = self.TRANSFER_URL.replace("/3", "/health")
-        resp = httpx.get(url=f"{health_url}")
+        resp = self._client.get(url=f"{health_url}")
         resp.raise_for_status()
         return resp.json()

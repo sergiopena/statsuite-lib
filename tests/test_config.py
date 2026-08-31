@@ -1,5 +1,6 @@
 import logging
 
+import httpx
 import pytest
 
 from statsuite_lib import ConfigClient
@@ -95,8 +96,8 @@ def test_get_tenants_error_response(config_client, httpx_mock):
         status_code=404,
     )
 
-    result = config_client.get_tenants()
-    assert result is None
+    with pytest.raises(httpx.HTTPStatusError):
+        config_client.get_tenants()
 
 
 def test_get_dataspaces_with_error(config_client, httpx_mock):
@@ -107,5 +108,33 @@ def test_get_dataspaces_with_error(config_client, httpx_mock):
         status_code=404,
     )
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(httpx.HTTPStatusError):
         list(config_client.get_dataspaces())
+
+
+def test_get_dataspace_success(config_client, httpx_mock, tenants_response):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    space = config_client.get_dataspace(dataspace="space1", tenant="default")
+
+    assert isinstance(space, Space)
+    assert space.label == "space1"
+    assert space.url == "https://space1.example.com"
+
+
+def test_get_dataspaces_unknown_tenant(config_client, httpx_mock, tenants_response):
+    """An unknown tenant should raise a clear KeyError, not crash on `None.spaces`."""
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    with pytest.raises(KeyError):
+        list(config_client.get_dataspaces(tenant="does-not-exist"))

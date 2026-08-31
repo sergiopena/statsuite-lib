@@ -204,3 +204,6 @@ __marimo__/
 
 .DS_Store
 dist/
+.idea/
+.pytest_cache/
+__pycache__/

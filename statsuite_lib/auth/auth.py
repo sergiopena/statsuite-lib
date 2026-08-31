@@ -1,3 +1,5 @@
+"""Client for the dotStatSuite Auth API (authorization rule management)."""
+
 import logging
 
 import httpx
@@ -47,7 +49,7 @@ class AuthClient:
         self._client = httpx.Client()
         self.AUTH_URL = f"{auth_url}/{api_version}"
         self._keycloak_client = keycloak_client
-        self._log = logging.getLogger("AuthClient")
+        self.log = logging.getLogger("AuthClient")
 
     def add_rule(
         self,
@@ -59,7 +61,7 @@ class AuthClient:
         artefact_agency_id: str = "*",
         artefact_id: str = "*",
         artefact_version: str = "*",
-    ):
+    ) -> dict:
         """Add a new authorization rule to the system.
 
         Args:
@@ -72,9 +74,12 @@ class AuthClient:
             artefact_id (str, optional): ID of the artifact. Defaults to "*".
             artefact_version (str, optional): Version of the artifact. Defaults to "*".
 
+        A duplicate-key error (the rule already exists) is treated as a no-op
+        rather than an error; any other failure response raises
+        ``httpx.HTTPStatusError``.
+
         Returns:
             dict: The JSON response from the server containing the created rule.
-
         """
 
         data = {
@@ -92,20 +97,27 @@ class AuthClient:
         headers = self._keycloak_client.auth_header()
         headers["Content-Type"] = "application/json"
 
-        # Add debugging to help identify the 400 Bad Request issue
-
-        response = httpx.post(url=url, headers=headers, json=data)
-
-        # Handle error responses
-        self._handle_error_response(response)
+        response = self._client.post(url=url, headers=headers, json=data)
+        self._handle_error_response(
+            response, ignorable_prefix="Cannot insert duplicate key"
+        )
 
         return response.json()
 
-    def _handle_error_response(self, response: httpx.Response) -> None:
-        """Handle error responses from the auth API.
+    def _handle_error_response(
+        self, response: httpx.Response, ignorable_prefix: str
+    ) -> None:
+        """Raise for error responses, except for a known, ignorable error.
+
+        Any error response is re-raised as ``httpx.HTTPStatusError`` unless its
+        first reported error matches ``ignorable_prefix``, in which case it is
+        logged and swallowed instead.
 
         Args:
             response: The HTTP response to check for errors.
+            ignorable_prefix: If the first reported error starts with this
+                prefix, the error is logged and swallowed instead of raised
+                (e.g. "the rule already exists" is not treated as a failure).
         """
         if response.status_code < 400:
             return
@@ -114,50 +126,29 @@ class AuthClient:
         payload = resp.get("payload", {})
         errors = payload.get("errors", [])
 
-        if errors and errors[0].startswith("Cannot insert duplicate key"):
-            print("Permission already exists")
+        if errors and errors[0].startswith(ignorable_prefix):
+            self.log.info(errors[0])
         else:
             response.raise_for_status()
 
-    def _handle_delete_error_response(self, response: httpx.Response) -> None:
-        """Handle error responses from delete operations.
-
-        Args:
-            response: The HTTP response to check for errors.
-        """
-        if response.status_code < 400:
-            return
-
-        resp = response.json()
-        payload = resp.get("payload", {})
-        errors = payload.get("errors", [])
-
-        if errors and errors[0].startswith("Rule not found"):
-            print("Rule not found")
-        else:
-            response.raise_for_status()
-
-    def delete_rule(self, rule_id: str):
+    def delete_rule(self, rule_id: str) -> dict:
         """Delete an authorization rule by its ID.
 
         Args:
             rule_id (str): The unique identifier of the rule to delete.
 
+        A rule-not-found error is treated as a no-op rather than an error; any
+        other failure response raises ``httpx.HTTPStatusError``.
+
         Returns:
             dict: The JSON response from the server confirming the deletion.
-
-
         """
         url = f"{self.AUTH_URL}/AuthorizationRules/{rule_id}"
         headers = self._keycloak_client.auth_header()
 
-        # Add debugging to help identify any issues
-        print(f"Deleting rule at: {url}")
-        print(f"Headers: {headers}")
+        self.log.info(f"Deleting rule at: {url}")
 
-        response = httpx.delete(url=url, headers=headers)
-
-        # Handle error responses
-        self._handle_delete_error_response(response)
+        response = self._client.delete(url=url, headers=headers)
+        self._handle_error_response(response, ignorable_prefix="Rule not found")
 
         return response.json()

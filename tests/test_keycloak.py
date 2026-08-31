@@ -70,6 +70,54 @@ def test_get_openid_configuration_error(httpx_mock):
         )
 
 
+def test_get_openid_configuration_http_error(httpx_mock):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://keycloak.example.com/.well-known/openid-configuration",
+        status_code=500,
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        KeycloakClient(  # noqa S105
+            openid_url="https://keycloak.example.com/.well-known/openid-configuration",
+            username="test-user",
+            password="test-password",
+        )
+
+
+def test_authenticate_http_error(httpx_mock, openid_config_response):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://keycloak.example.com/.well-known/openid-configuration",
+        json=openid_config_response,
+    )
+    httpx_mock.add_response(
+        method="POST",
+        url="https://auth.example.com/token",
+        status_code=401,
+        json={"error": "invalid_grant"},
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        KeycloakClient(  # noqa S105
+            openid_url="https://keycloak.example.com/.well-known/openid-configuration",
+            username="test-user",
+            password="wrong-password",  # noqa S106
+        )
+
+
+def test_trigger_refresh_token_http_error(keycloak_client, httpx_mock):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://auth.example.com/token",
+        status_code=400,
+        json={"error": "invalid_grant"},
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        keycloak_client.trigger_refresh_token()
+
+
 def test_trigger_refresh_token(keycloak_client, httpx_mock, token_response):
     # Mock refresh token request
     httpx_mock.add_response(

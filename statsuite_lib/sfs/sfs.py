@@ -1,3 +1,5 @@
+"""Client for the SDMX Faceted Search Service (SFS) reindexing API."""
+
 import logging
 import time
 from enum import IntEnum
@@ -5,7 +7,7 @@ from typing import Optional
 
 import httpx
 
-from .models import LoadingLog, LoadingLogs
+from .models import Index, LoadingLog, LoadingLogs
 
 
 class SFSClient:
@@ -34,25 +36,21 @@ class SFSClient:
         Returns:
             loadingId(str)
         """
-        resp = httpx.post(
+        resp = self._client.post(
             f"{self.SFS_URL}/admin/dataflows?api-key={self._sfs_api_key}&tenant={tenant}"  # noqa
         )
-        if resp.status_code == 200:
-            from .models import Index
-
-            loading = Index.model_validate(resp.json())
-            return loading.root.get("loadingId")
+        resp.raise_for_status()
+        loading = Index.model_validate(resp.json())
+        return loading.root.get("loadingId")
 
     class LoadingStatus(IntEnum):
         """Enum class to represent status of the loading tasks
 
         Attributes:
-            COMPLETED: Task finished succesfully
-            RETRY: Some recoverable error happened or the task is in a non-complete
-                   status
+            COMPLETED: Task finished successfully
+            RETRY: Some recoverable error happened, or the task is not yet complete
             FAILED: Unrecoverable error
-            BUG502: There si a bug retrieving loading status that can be retrieve
-                    fetching the logs without id query param
+            BUG502: Unused: reserved for the known SFS 502 status-retrieval bug
         """
 
         COMPLETED = 1
@@ -73,14 +71,14 @@ class SFSClient:
             LoadingLog or None if the loading_id cannot be found
         """
 
-        resp = httpx.get(
+        resp = self._client.get(
             url=f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
         )
         if resp.status_code == 200:
             return LoadingLog.model_validate(resp.json())
         if resp.status_code == 502:
             self.log.error("Error 502 getting loading log, using expensive query")
-            resp = httpx.get(
+            resp = self._client.get(
                 f"{self.SFS_URL}/admin/logs?api-key={self._sfs_api_key}&tenant={tenant}"
             )  # noqa
             loadings = LoadingLogs.model_validate(resp.json())
@@ -98,8 +96,15 @@ class SFSClient:
 
         Returns:
             LoadingStatus enumeration
+
+        Raises:
+            LookupError: If no log entry can be found for ``loading_id``.
         """
         loading = self.get_log(tenant=tenant, loading_id=loading_id)
+        if loading is None:
+            raise LookupError(
+                f"No loading log found for loading_id={loading_id!r} in tenant={tenant!r}"
+            )
         if loading.executionStatus == "completed":
             return self.LoadingStatus.COMPLETED
         else:

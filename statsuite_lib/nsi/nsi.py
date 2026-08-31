@@ -1,3 +1,5 @@
+"""Client for the dotStatSuite NSI (Network Service Interface) file API."""
+
 import logging
 
 import httpx
@@ -42,7 +44,6 @@ class NSIClient:
 
         Returns:
             int: HTTP status code of the upload response.
-
         """
 
         headers = self._keycloak_client.auth_header() | {
@@ -51,7 +52,7 @@ class NSIClient:
 
         self.log.info(f"Uploading to NSI: {self.NSI_URL + path}")
 
-        response = httpx.post(
+        response = self._client.post(
             self.NSI_URL + path,
             content=file_to_upload,
             headers=headers,
@@ -64,21 +65,23 @@ class NSIClient:
         response.raise_for_status()
         return response.status_code
 
-    def get(self, path: str, headers: dict = {}, timeout: int = None) -> httpx.Response:
+    def get(
+        self, path: str, headers: dict | None = None, timeout: int = None
+    ) -> httpx.Response:
         """Retrieve a file or resource from the NSI service.
 
         Args:
             path (str): Path to the resource on the NSI service.
-            headers (dict, optional): Additional HTTP headers to include. Defaults to {}.
+            headers (dict, optional): Additional HTTP headers to include. Defaults to None.
             timeout (int, optional): Request timeout in seconds. Defaults to None.
 
         Returns:
             httpx.Response: Response object containing the requested resource.
         """
 
-        headers |= self._keycloak_client.auth_header()
+        headers = (headers or {}) | self._keycloak_client.auth_header()
         self.log.info(f"Getting from NSI: {self.NSI_URL + path}")
-        resp = httpx.get(self.NSI_URL + path, headers=headers, timeout=timeout)
+        resp = self._client.get(self.NSI_URL + path, headers=headers, timeout=timeout)
         resp.raise_for_status()
         return resp
 
@@ -91,11 +94,12 @@ class NSIClient:
 
         Returns:
             int: HTTP status code of the delete response.
-
         """
 
         headers = self._keycloak_client.auth_header()
         self.log.info(f"Deleting from NSI: {self.NSI_URL + path}")
-        response = httpx.delete(self.NSI_URL + path, headers=headers, timeout=timeout)
+        response = self._client.delete(
+            self.NSI_URL + path, headers=headers, timeout=timeout
+        )
         response.raise_for_status()
         return response.status_code

@@ -1,9 +1,11 @@
+"""Client for the dotStatSuite Config API (tenants and dataspaces)."""
+
 import logging
 from typing import Iterator
 
 import httpx
 
-from .models import Space, Tenants
+from .models import Space, Tenant, Tenants
 
 
 class ConfigClient:
@@ -21,16 +23,35 @@ class ConfigClient:
         self.log = logging.getLogger("ConfigClient")
         self.log.level = logging.INFO
 
-    def get_tenants(self) -> str:
+    def get_tenants(self) -> Tenants:
         """Gets tenants config
 
         Returns:
-            loadingId(str)
+            Tenants: The parsed tenants configuration.
         """
-        resp = httpx.get(f"{self.CONFIG_URL}/configs/tenants.json")
-        if resp.status_code == 200:
-            loading = Tenants.model_validate(resp.json())
-            return loading
+        resp = self._client.get(f"{self.CONFIG_URL}/configs/tenants.json")
+        resp.raise_for_status()
+        return Tenants.model_validate(resp.json())
+
+    def _get_tenant(self, tenant: str) -> Tenant:
+        """Look up a tenant by name, raising a clear error if unknown.
+
+        Args:
+            tenant: select which tenant
+
+        Returns:
+            Tenant: The tenant configuration.
+
+        Raises:
+            KeyError: If ``tenant`` is not present in the tenants config.
+        """
+        tenants = self.get_tenants()
+        if tenant not in tenants.root:
+            raise KeyError(
+                f"Unknown tenant {tenant!r}, available tenants: "
+                f"{sorted(tenants.root)}"
+            )
+        return tenants.root[tenant]
 
     def get_dataspaces(self, tenant: str = "default") -> Iterator[Space]:
         """Returns a list of dataspaces configured for a tenant
@@ -39,10 +60,9 @@ class ConfigClient:
             tenant: select which tenant
 
         Yields:
-        Space: A dataspace configuration object for each space in the tenant.
+            Space: A dataspace configuration object for each space in the tenant.
         """
-        tenants = self.get_tenants()
-        spaces = tenants.root.get(tenant).spaces
+        spaces = self._get_tenant(tenant).spaces
         for space in spaces:
             yield spaces.get(space)
 
@@ -56,5 +76,4 @@ class ConfigClient:
         Returns:
             Space: A dataspace configuration object for the given tenant and space.
         """
-        tenants = self.get_tenants()
-        return tenants.root.get(tenant).spaces.get(dataspace)
+        return self._get_tenant(tenant).spaces.get(dataspace)

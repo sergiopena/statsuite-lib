@@ -40,8 +40,13 @@ exclude_patterns = []
 github_username = "sergiopena"
 github_repository = "statsuite-lib"
 
+# Render docstring "Attributes:" sections as field lists (:ivar:) rather than
+# separate `.. attribute::` directives, which would otherwise collide with
+# autodoc's own introspection of real class attributes (pydantic model fields,
+# enum members) and produce "duplicate object description" warnings.
+napoleon_use_ivar = True
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]

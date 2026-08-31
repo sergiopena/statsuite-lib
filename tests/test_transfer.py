@@ -40,6 +40,38 @@ def test_import_sdmx_file_success(transfer_client, httpx_mock):
     assert result == "12345"
 
 
+def test_import_sdmx_file_does_not_print(transfer_client, httpx_mock, capsys):
+    """Regression test: import_sdmx_file used to print the raw response JSON
+    to stdout on every call."""
+    httpx_mock.add_response(
+        method="POST",
+        url="https://transfer.example.com/3/import/sdmxFile",
+        json={"message": "File import completed for 12345"},
+        status_code=200,
+    )
+
+    transfer_client.import_sdmx_file(
+        file_object=b"test content", dataspace="test-space"
+    )
+
+    assert capsys.readouterr().out == ""
+
+
+def test_import_sdmx_file_error_response(transfer_client, httpx_mock):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://transfer.example.com/3/import/sdmxFile",
+        json={"error": "invalid dataspace"},
+        status_code=400,
+    )
+
+    result = transfer_client.import_sdmx_file(
+        file_object=b"test content", dataspace="test-space"
+    )
+
+    assert result is None
+
+
 def test_check_request_status_success(transfer_client, httpx_mock):
     httpx_mock.add_response(
         method="POST",
@@ -138,6 +170,62 @@ def test_set_tune_success(transfer_client, httpx_mock):
     assert result == expected_response
 
 
+def test_activate_dataflow_success(transfer_client, httpx_mock):
+    expected_response = {"status": "success"}
+    httpx_mock.add_response(
+        method="POST",
+        url="https://transfer.example.com/3/init/dataflow",
+        json=expected_response,
+        status_code=200,
+    )
+
+    result = transfer_client.activate_dataflow(
+        dataspace="test-space", df_id="test-flow"
+    )
+
+    assert result == expected_response
+
+
+def test_health_success(transfer_client, httpx_mock):
+    expected_response = {"status": "UP"}
+    httpx_mock.add_response(
+        method="GET",
+        url="https://transfer.example.com/health",
+        json=expected_response,
+        status_code=200,
+    )
+
+    result = transfer_client.health()
+
+    assert result == expected_response
+
+
+def test_health_error(transfer_client, httpx_mock):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://transfer.example.com/health",
+        status_code=503,
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        transfer_client.health()
+
+
 def test_initialization(transfer_client):
     assert transfer_client.TRANSFER_URL == "https://transfer.example.com/3"
     assert isinstance(transfer_client._client, httpx.Client)
+
+
+def test_no_circular_package_import():
+    """Regression test: transfer.py previously did `from statsuite_lib import
+    KeycloakClient`, importing from its own partially-initialized top-level
+    package instead of a direct relative import. That only worked because of
+    import order in statsuite_lib/__init__.py, and would break if that order
+    ever changed. Guard against reintroducing it."""
+    import inspect
+
+    from statsuite_lib.transfer import transfer as transfer_module
+
+    source = inspect.getsource(transfer_module)
+    assert "from statsuite_lib import" not in source
+    assert "from ..keycloak.keycloak import KeycloakClient" in source

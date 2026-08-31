@@ -1,3 +1,10 @@
+"""Keycloak authentication client for statsuite-lib.
+
+Provides :class:`KeycloakClient`, which every other client in this
+library depends on to obtain and refresh OAuth2/OpenID Connect bearer
+tokens.
+"""
+
 import datetime
 import logging
 
@@ -15,6 +22,11 @@ class KeycloakClient:
         openid_url (str): The OpenID configuration URL for the Keycloak server
         username (str): Username for authentication
         password (str): Password for authentication
+
+    Raises:
+        httpx.ConnectError: If the Keycloak server cannot be reached.
+        httpx.HTTPStatusError: If the OpenID configuration or the initial
+            authentication request returns an error status.
     """
 
     def __init__(self, openid_url: str, username: str, password: str) -> None:
@@ -43,7 +55,8 @@ class KeycloakClient:
         Retrieve OpenID Connect configuration from Keycloak server.
 
         This method fetches the authorization and token endpoints from the
-        Keycloak OpenID configuration.
+        Keycloak OpenID configuration. It also raises for an error status
+        response (e.g. server misconfiguration).
 
         Raises:
             ConnectError: If connection to the Keycloak server fails.
@@ -52,6 +65,7 @@ class KeycloakClient:
         try:
 
             response = self._client.get(self.OPENID_URL)
+            response.raise_for_status()
             self._auth_endpoint = response.json()["authorization_endpoint"]
             self._token_endpoint = response.json()["token_endpoint"]
 
@@ -65,11 +79,11 @@ class KeycloakClient:
         This method obtains the initial access and refresh tokens using the
         provided credentials.
 
+        Raises for an error response, e.g. invalid credentials.
+
         Args:
             username (str): Username for authentication
             password (str): Password for authentication
-
-
         """
 
         self.log.info(f"Authenticating with {self._auth_endpoint}")
@@ -82,6 +96,7 @@ class KeycloakClient:
                 "password": password,
             },
         )
+        response.raise_for_status()
 
         self.refresh_token = response.json()["refresh_token"]
         self.access_token = response.json()["access_token"]
@@ -95,8 +110,7 @@ class KeycloakClient:
 
         This method is called when the access token is expired or about to expire.
         It uses the refresh token to obtain a new access token and refresh token pair.
-
-
+        Raises for an error response, e.g. the refresh token has itself expired.
         """
 
         self.log.info("Triggering refresh token")
@@ -108,6 +122,7 @@ class KeycloakClient:
                 "refresh_token": self.refresh_token,
             },
         )
+        response.raise_for_status()
         self.access_token = response.json()["access_token"]
         self.access_token_expires = datetime.datetime.now() + datetime.timedelta(
             seconds=response.json()["expires_in"]

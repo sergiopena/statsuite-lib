@@ -148,16 +148,23 @@ def test_handle_error_response_success_status(auth_client):
     mock_response.status_code = 200
 
     # Should return without doing anything
-    result = auth_client._handle_error_response(mock_response)
+    result = auth_client._handle_error_response(
+        mock_response, ignorable_prefix="anything"
+    )
     assert result is None
 
 
-def test_handle_delete_error_response_success_status(auth_client):
-    """Test _handle_delete_error_response with successful status codes."""
-    # Create a mock response with status code < 400
-    mock_response = Mock()
-    mock_response.status_code = 200
+def test_delete_rule_does_not_leak_headers(auth_client, httpx_mock, capsys):
+    """Deleting a rule must never print the Authorization header (see auth.py bug fix)."""
+    httpx_mock.add_response(
+        method="DELETE",
+        url="http://test-auth/1.1/AuthorizationRules/123",
+        json={"status": "success"},
+        status_code=200,
+    )
 
-    # Should return without doing anything
-    result = auth_client._handle_delete_error_response(mock_response)
-    assert result is None
+    auth_client.delete_rule("123")
+
+    captured = capsys.readouterr()
+    assert "Bearer" not in captured.out
+    assert "fake-token" not in captured.out

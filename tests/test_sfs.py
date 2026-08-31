@@ -1,3 +1,4 @@
+import httpx
 import pytest
 
 from statsuite_lib import SFSClient
@@ -88,6 +89,26 @@ def test_get_log_return_none_if_not_found(httpx_mock, loadings):
     client = SFSClient(sfs_url="https://foo", sfs_api_key="bar")
     log = client.get_log(tenant="foo", loading_id="172355625862")
     assert log is None
+
+
+def test_check_status_loading_raises_when_not_found(httpx_mock):
+    """Regression test: previously `check_status_loading` crashed with an
+    unguarded AttributeError on `None.executionStatus` when `get_log` couldn't
+    find the loading_id; it should now raise a clear LookupError instead."""
+    httpx_mock.add_response(status_code=502, content="{}")
+    httpx_mock.add_response(status_code=200, content="[]")
+    client = SFSClient(sfs_url="https://foo", sfs_api_key="bar")
+
+    with pytest.raises(LookupError):
+        client.check_status_loading(tenant="foo", loading_id="does-not-exist")
+
+
+def test_index_error_response(httpx_mock):
+    httpx_mock.add_response(method="POST", status_code=500)
+    client = SFSClient(sfs_url="https://foo", sfs_api_key="bar")
+
+    with pytest.raises(httpx.HTTPStatusError):
+        client.index()
 
 
 def test_check_status_loading(httpx_mock, loading):
