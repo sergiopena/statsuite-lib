@@ -77,3 +77,25 @@ class ConfigClient:
             Space: A dataspace configuration object for the given tenant and space.
         """
         return self._get_tenant(tenant).spaces.get(dataspace)
+
+    def get_oidc_authority(self, tenant: str = "default") -> str:
+        """Returns the OIDC authority URL configured for a tenant
+
+        A tenant's scopes (e.g. "dlm", "de") each carry their own OIDC
+        settings, but in practice they all point at the same authority for a
+        given tenant, so the authority of any one of the tenant's scopes is
+        returned.
+
+        Args:
+            tenant: select which tenant
+
+        Returns:
+            str: The OIDC authority URL for the tenant.
+
+        Raises:
+            LookupError: If the tenant has no scopes configured.
+        """
+        scopes = self._get_tenant(tenant).scopes
+        if not scopes:
+            raise LookupError(f"No scopes configured for tenant {tenant!r}")
+        return next(iter(scopes.values())).oidc.authority

@@ -17,6 +17,13 @@ report:
         environment-results: true
         unpinned-requirements: true
       cvss-severity: []
+      vulnerabilities:
+        # CVE-2026-81726: nltk path traversal in model-artifact APIs. No fixed release
+        # exists (latest 3.10.3 is affected). nltk is only a transitive dev dependency of
+        # safety itself and is never imported or shipped by statsuite-lib.
+        SFTY-20260902-58666:
+          reason: nltk has no fix yet; transitive dev-only dependency of safety, not used by statsuite-lib
+          expires: '2026-12-21'
 
 
 fail-scan-with-exit-code:

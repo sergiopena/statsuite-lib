@@ -21,12 +21,40 @@ def tenants_response():
                 "space1": {"label": "space1", "url": "https://space1.example.com"},
                 "space2": {"label": "space2", "url": "https://space2.example.com"},
             },
+            "scopes": {
+                "dlm": {
+                    "oidc": {
+                        "authority": "https://keycloak.example.com/realms/default",
+                        "client_id": "stat-suite",
+                    }
+                },
+                "de": {
+                    "oidc": {
+                        "authority": "https://keycloak.example.com/realms/default",
+                        "client_id": "stat-suite",
+                        "required": False,
+                    }
+                },
+            },
         },
         "tenant2": {
             "id": "tenant2",
             "spaces": {
                 "space3": {"label": "space3", "url": "https://space3.example.com"}
             },
+            "scopes": {
+                "dlm": {
+                    "oidc": {
+                        "authority": "https://keycloak.example.com/realms/tenant2",
+                        "client_id": "stat-suite",
+                    }
+                },
+            },
+        },
+        "tenant_no_scopes": {
+            "id": "tenant_no_scopes",
+            "spaces": {},
+            "scopes": {},
         },
     }
 
@@ -125,6 +153,58 @@ def test_get_dataspace_success(config_client, httpx_mock, tenants_response):
     assert isinstance(space, Space)
     assert space.label == "space1"
     assert space.url == "https://space1.example.com"
+
+
+def test_get_oidc_authority_default_tenant(config_client, httpx_mock, tenants_response):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    authority = config_client.get_oidc_authority()
+
+    assert authority == "https://keycloak.example.com/realms/default"
+
+
+def test_get_oidc_authority_specific_tenant(
+    config_client, httpx_mock, tenants_response
+):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    authority = config_client.get_oidc_authority(tenant="tenant2")
+
+    assert authority == "https://keycloak.example.com/realms/tenant2"
+
+
+def test_get_oidc_authority_unknown_tenant(config_client, httpx_mock, tenants_response):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    with pytest.raises(KeyError):
+        config_client.get_oidc_authority(tenant="does-not-exist")
+
+
+def test_get_oidc_authority_no_scopes(config_client, httpx_mock, tenants_response):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://config.example.com/configs/tenants.json",
+        json=tenants_response,
+        status_code=200,
+    )
+
+    with pytest.raises(LookupError):
+        config_client.get_oidc_authority(tenant="tenant_no_scopes")
 
 
 def test_get_dataspaces_unknown_tenant(config_client, httpx_mock, tenants_response):

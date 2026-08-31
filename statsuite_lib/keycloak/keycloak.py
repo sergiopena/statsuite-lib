@@ -7,8 +7,12 @@ tokens.
 
 import datetime
 import logging
+from typing import TYPE_CHECKING
 
 import httpx
+
+if TYPE_CHECKING:
+    from ..config.config import ConfigClient
 
 
 class KeycloakClient:
@@ -49,6 +53,33 @@ class KeycloakClient:
         self.refresh_token = None
         self._get_openid_configuration()
         self._authenticate(username=username, password=password)
+
+    @classmethod
+    def from_config(
+        cls,
+        config_client: "ConfigClient",
+        username: str,
+        password: str,
+        tenant: str = "default",
+    ) -> "KeycloakClient":
+        """
+        Build a KeycloakClient using the OIDC authority looked up from a
+        ConfigClient, instead of a hand-provided ``openid_url``.
+
+        Args:
+            config_client (ConfigClient): An initialized ConfigClient used to
+                look up the tenant's OIDC authority.
+            username (str): Username for authentication
+            password (str): Password for authentication
+            tenant (str, optional): Which tenant's OIDC config to use.
+                Defaults to "default".
+
+        Returns:
+            KeycloakClient: A new, authenticated KeycloakClient instance.
+        """
+        authority = config_client.get_oidc_authority(tenant=tenant)
+        openid_url = f"{authority}/.well-known/openid-configuration"
+        return cls(openid_url=openid_url, username=username, password=password)
 
     def _get_openid_configuration(self) -> None:
         """
