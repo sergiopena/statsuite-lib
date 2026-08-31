@@ -206,4 +206,3 @@ __marimo__/
 dist/
 .idea/
 .pytest_cache/
-__pycache__/
