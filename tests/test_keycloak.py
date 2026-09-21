@@ -187,10 +187,10 @@ def test_from_config_derives_openid_url(
         method="POST", url="https://auth.example.com/token", json=token_response
     )
 
-    client = KeycloakClient.from_config(
+    client = KeycloakClient.from_config(  # noqa S106
         config_client=config_client,
         username="test-user",
-        password="test-password",  # noqa S106
+        password="test-password",
         tenant="default",
     )
 
