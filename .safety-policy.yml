@@ -17,6 +17,56 @@ report:
         environment-results: true
         unpinned-requirements: true
       cvss-severity: []
+      # nltk is not a project dependency: it is pulled in transitively by the
+      # `safety` scanner itself (safety -> nltk>=3.9), i.e. dev-only tooling
+      # that never ships or runs as part of statsuite-lib. As of 2026-09-22
+      # there is no patched nltk release (3.9.2 is latest with fixes; 3.10.3
+      # remains vulnerable too) so these findings cannot be resolved by
+      # upgrading. Re-review before the expiry date and drop these entries
+      # once a fixed nltk (or a safety release that no longer depends on it)
+      # is available.
+      vulnerabilities:
+        SFTY-20260901-40389: &nltk-ignore
+          reason: "Unfixed transitive dep of safety CLI (nltk); not shipped/runtime code"
+          expires: '2026-12-31'
+        SFTY-20260908-76797: *nltk-ignore
+        SFTY-20260908-96400: *nltk-ignore
+        SFTY-20260218-01424: *nltk-ignore
+        SFTY-20260908-82787: *nltk-ignore
+        89827: *nltk-ignore
+        SFTY-20260901-05934: *nltk-ignore
+        SFTY-20260725-27090: *nltk-ignore
+        SFTY-20260616-58930: *nltk-ignore
+        SFTY-20260902-94610: *nltk-ignore
+        SFTY-20260908-91145: *nltk-ignore
+        SFTY-20260908-36021: *nltk-ignore
+        SFTY-20260908-90243: *nltk-ignore
+        SFTY-20260908-33687: *nltk-ignore
+        SFTY-20260908-67392: *nltk-ignore
+        SFTY-20260902-62888: *nltk-ignore
+        SFTY-20260304-49322: *nltk-ignore
+        89826: *nltk-ignore
+        SFTY-20260309-65600: *nltk-ignore
+        SFTY-20260821-99503: *nltk-ignore
+        SFTY-20260902-10897: *nltk-ignore
+        SFTY-20260902-58666: *nltk-ignore
+        SFTY-20260908-78718: *nltk-ignore
+        SFTY-20260908-21917: *nltk-ignore
+        89824: *nltk-ignore
+        SFTY-20260908-69359: *nltk-ignore
+        SFTY-20260908-92033: *nltk-ignore
+        SFTY-20260902-43043: *nltk-ignore
+        SFTY-20260902-26023: *nltk-ignore
+        SFTY-20260908-33140: *nltk-ignore
+        SFTY-20260908-61270: *nltk-ignore
+        SFTY-20260902-50166: *nltk-ignore
+        SFTY-20260731-78787: *nltk-ignore
+        SFTY-20260731-74449: *nltk-ignore
+        SFTY-20260731-71411: *nltk-ignore
+        SFTY-20260731-83123: *nltk-ignore
+        SFTY-20260902-32727: *nltk-ignore
+        SFTY-20260320-58622: *nltk-ignore
+        SFTY-20260813-62140: *nltk-ignore
 
 
 fail-scan-with-exit-code:
