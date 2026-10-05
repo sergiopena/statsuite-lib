@@ -120,3 +120,59 @@ def test_delete_with_timeout(nsi_client, httpx_mock):
 
     response = nsi_client.delete(path="/test/path", timeout=30)
     assert response == 204
+
+
+@pytest.fixture
+def anon_nsi_client():
+    return NSIClient(nsi_url="https://nsi.example.com")
+
+
+def test_put_without_keycloak_client_sends_no_auth_header(anon_nsi_client, httpx_mock):
+    httpx_mock.add_response(
+        method="POST", url="https://nsi.example.com/test/path", status_code=207
+    )
+
+    response = anon_nsi_client.put(file_to_upload=b"test content", path="/test/path")
+
+    assert response == 207
+    request = httpx_mock.get_requests()[0]
+    assert "Authorization" not in request.headers
+    assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+
+
+def test_get_without_keycloak_client_sends_no_auth_header(anon_nsi_client, httpx_mock):
+    httpx_mock.add_response(
+        method="GET", url="https://nsi.example.com/test/path", status_code=200
+    )
+
+    response = anon_nsi_client.get(path="/test/path")
+
+    assert response.status_code == 200
+    request = httpx_mock.get_requests()[0]
+    assert "Authorization" not in request.headers
+
+
+def test_get_without_keycloak_client_keeps_custom_headers(anon_nsi_client, httpx_mock):
+    httpx_mock.add_response(
+        method="GET", url="https://nsi.example.com/test/path", status_code=200
+    )
+
+    anon_nsi_client.get(path="/test/path", headers={"Custom-Header": "value"})
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers["Custom-Header"] == "value"
+    assert "Authorization" not in request.headers
+
+
+def test_delete_without_keycloak_client_sends_no_auth_header(
+    anon_nsi_client, httpx_mock
+):
+    httpx_mock.add_response(
+        method="DELETE", url="https://nsi.example.com/test/path", status_code=204
+    )
+
+    response = anon_nsi_client.delete(path="/test/path")
+
+    assert response == 204
+    request = httpx_mock.get_requests()[0]
+    assert "Authorization" not in request.headers

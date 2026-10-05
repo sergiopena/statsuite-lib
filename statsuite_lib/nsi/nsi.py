@@ -19,20 +19,37 @@ class NSIClient:
 
     Args:
         nsi_url (str): Base URL of the NSI service.
-        keycloak_client (KeycloakClient): Client for handling Keycloak authentication.
+        keycloak_client (KeycloakClient, optional): Client for handling Keycloak
+            authentication. If omitted, requests are sent without an
+            Authorization header.
     """
 
-    def __init__(self, nsi_url: str, keycloak_client: KeycloakClient) -> None:
+    def __init__(
+        self, nsi_url: str, keycloak_client: KeycloakClient | None = None
+    ) -> None:
         """Initialize the NSIClient.
 
         Args:
             nsi_url (str): Base URL of the NSI service.
-            keycloak_client (KeycloakClient): Initialized Keycloak client for authentication.
+            keycloak_client (KeycloakClient, optional): Initialized Keycloak client
+                for authentication. If omitted, requests are sent without an
+                Authorization header. Defaults to None.
         """
         self._client = httpx.Client()
         self.NSI_URL = nsi_url
         self._keycloak_client = keycloak_client
         self.log = logging.getLogger("NSIClient")
+
+    def _auth_header(self) -> dict:
+        """Build the Authorization header, if a Keycloak client was configured.
+
+        Returns:
+            dict: ``{"Authorization": "Bearer ..."}``, or an empty dict if no
+                Keycloak client was configured.
+        """
+        if self._keycloak_client is None:
+            return {}
+        return self._keycloak_client.auth_header()
 
     def put(self, file_to_upload, path: str, timeout: int = None) -> int:
         """Upload a file to the NSI service.
@@ -46,7 +63,7 @@ class NSIClient:
             int: HTTP status code of the upload response.
         """
 
-        headers = self._keycloak_client.auth_header() | {
+        headers = self._auth_header() | {
             "Content-Type": "application/x-www-form-urlencoded"
         }
 
@@ -79,7 +96,7 @@ class NSIClient:
             httpx.Response: Response object containing the requested resource.
         """
 
-        headers = (headers or {}) | self._keycloak_client.auth_header()
+        headers = (headers or {}) | self._auth_header()
         self.log.info(f"Getting from NSI: {self.NSI_URL + path}")
         resp = self._client.get(self.NSI_URL + path, headers=headers, timeout=timeout)
         resp.raise_for_status()
@@ -96,7 +113,7 @@ class NSIClient:
             int: HTTP status code of the delete response.
         """
 
-        headers = self._keycloak_client.auth_header()
+        headers = self._auth_header()
         self.log.info(f"Deleting from NSI: {self.NSI_URL + path}")
         response = self._client.delete(
             self.NSI_URL + path, headers=headers, timeout=timeout

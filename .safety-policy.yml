@@ -19,12 +19,11 @@ report:
       cvss-severity: []
       # nltk is not a project dependency: it is pulled in transitively by the
       # `safety` scanner itself (safety -> nltk>=3.9), i.e. dev-only tooling
-      # that never ships or runs as part of statsuite-lib. As of 2026-09-22
-      # there is no patched nltk release (3.9.2 is latest with fixes; 3.10.3
-      # remains vulnerable too) so these findings cannot be resolved by
-      # upgrading. Re-review before the expiry date and drop these entries
-      # once a fixed nltk (or a safety release that no longer depends on it)
-      # is available.
+      # that never ships or runs as part of statsuite-lib. nltk is locked at
+      # 3.10.3 (fixes CVE-2026-12252/12261/12372); the IDs below have no
+      # patched nltk release yet and cannot be resolved by upgrading.
+      # Re-review before the expiry date and drop these entries once a fixed
+      # nltk (or a safety release that no longer depends on it) is available.
       vulnerabilities:
         SFTY-20260901-40389: &nltk-ignore
           reason: "Unfixed transitive dep of safety CLI (nltk); not shipped/runtime code"
